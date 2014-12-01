@@ -9,6 +9,12 @@ struct ListNode
     ListNode    * next {};
     ListNode    * rand {};
     std::string   data;
+    ListNode(ListNode *p, ListNode *n, ListNode *r, const std::string &d):
+        prev(p),
+        next(n),
+        rand(r),
+        data(d)
+    {}
 };
 
 class List
@@ -26,11 +32,12 @@ public:
     void push_back(const std::string &);
     void for_each(const lambda &); 
     void clean();
+    void log(); // only for testing
 
 private:    
 
-    inline void check_ndx(size_t ndx) {if(ndx > count) throw std::out_of_range("out of range");}
-         
+    inline void check_ndx(size_t ndx)   {if(ndx > count) throw std::out_of_range("out of range");}
+    inline std::string get_data(node n) {return n ?  n->data : "nullptr";}     
     node    head;
     node    tail;
     size_t count;
@@ -53,8 +60,18 @@ List::~List()
 
 void List::push_back(const std::string & data)
 {
-    // ... do it for test
-
+    std::cout << "push: " << data << " count: " << count << std::endl;
+    if (count == 0)
+    {    
+        head = new ListNode(nullptr,nullptr,nullptr,data);
+        tail = head;
+    }
+    else
+    {
+        tail->next = new ListNode(tail, nullptr, nullptr, data);
+        tail = tail->next;
+    }    
+    ++count; 
 }
 
 void List::clean()
@@ -72,6 +89,18 @@ void List::clean()
     delete head;
 }
 
+void List::log()
+{
+    for_each([&](node n, int)
+    {
+        std::cout << 
+        " data: " << get_data(n)       << 
+        " prev: " << get_data(n->prev) << 
+        " next: " << get_data(n->next) <<
+        " rand: " << get_data(n->rand) << std::endl; 
+    });
+}
+
 void List::for_each(const lambda &l)
 {
     size_t index = 0;
@@ -86,7 +115,7 @@ void List::for_each(const lambda &l)
 void List::Serialize(std::ostream & stream)   
 {
     std::vector<node>     links;
-    std::vector<uint32_t> indicies;
+    std::vector<int32_t> indicies;
 
     for_each([&](node n, int){links.push_back(n->rand);}); // 1st pass, collect random links
     for_each([&](node n, int)                              // 2nd pass, collect random indicies
@@ -113,7 +142,7 @@ void List::Deserialize(std::istream & stream)
 {
     clean(); // deserealize restore and does not append to current class!
 
-    std::vector<uint32_t> indicies;
+    std::vector<int32_t> indicies;
     std::vector<node>     links;
    
     file_header hdr;
@@ -152,10 +181,14 @@ int main()
     List test;
     try
     {
-        // do test        
+        test.push_back("node 1");
+        test.push_back("node 2");
+        test.push_back("node 3");
+        test.push_back("node 4");
+        test.push_back("node 5");
+        test.push_back("node 6");
 
-
-
+        test.log();
 
 
     }
