@@ -30,17 +30,16 @@ public:
     void Serialize(std::ostream & stream);
     void Deserialize(std::istream & stream);
     
-// test methods for list operations :
+// only test methods for list operations :
 
     void push_back(const std::string &);  // and link with head for testing purpose
     void for_each(const lambda &); 
     void clean();
-    void log(); // only for testing
+    void log(); 
 
 private:    
-
-    inline void check_ndx(size_t ndx)   {if(ndx > count) throw std::out_of_range("out of range");}
     inline std::string get_data(node n) {return n ?  n->data : "null";}     
+
     node    head;
     node    tail;
     size_t count;
@@ -75,7 +74,6 @@ void List::push_back(const std::string & data)
         tail = tail->next;
     }    
     count++;
-    std::cout << "push "<< data <<" count: " << count << std::endl; 
 }
 
 
@@ -127,7 +125,7 @@ void List::Serialize(std::ostream & stream)
     std::vector<int32_t> indicies(count, -1);
 
     for_each([&](node n, int)  {links.push_back(n->rand);}); // 1st pass, collect random links
-    for(size_t i = 0; i < links.size(); i++)                 // 2nd pass, collect random indicies{
+    for(size_t i = 0; i < links.size(); i++)                 // 2nd pass, collect random indicies
     {    
         for_each([&](node n, int ndx)  
         {
@@ -172,7 +170,7 @@ void List::Deserialize(std::istream & stream)
         stream.read(reinterpret_cast<char *>(&data[0]),size);
         push_back(data);
     }  
-     for(size_t i = 0; i < indicies.size(); i++) // 1nd pass, collect random indocies
+    for(size_t i = 0; i < indicies.size(); i++) // 1nd pass, collect random indicies
     {    
         for_each([&](node n, int ndx)  
         {
