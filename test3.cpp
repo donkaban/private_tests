@@ -60,7 +60,7 @@ void List::for_each(const lambda &l)
 {
     size_t index = 0;
     node current = head; 
-    while(current != tail)
+    while(current != tail && current->next)
     {
         l(current, index++);
         current = current->next;
