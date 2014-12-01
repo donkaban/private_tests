@@ -105,7 +105,7 @@ void List::Deserialize(std::istream & stream)
     indicies.resize(hdr.count);
     links.resize(hdr.count);
     stream.read(reinterpret_cast<char *>(&indicies[0]),indicies.size() * sizeof(int32_t)); // read indicies
-    for(int i = 0; i < hdr.count; i++)                                                     // read data's
+    for(int i = 0; i < hdr.count; i++)                                                     // read data packet's
     {
         size_t       size;
         std::string  data;
