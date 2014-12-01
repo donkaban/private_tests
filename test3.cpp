@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <vector>
 #include <functional>
+#include <fstream>
 
 struct ListNode
 {
@@ -29,7 +30,9 @@ public:
     void Serialize(std::ostream & stream);
     void Deserialize(std::istream & stream);
     
-    void push_back(const std::string &);
+// test methods for list operations :
+
+    void push_back(const std::string &);  // and link with head for testing purpose
     void for_each(const lambda &); 
     void clean();
     void log(); // only for testing
@@ -37,7 +40,7 @@ public:
 private:    
 
     inline void check_ndx(size_t ndx)   {if(ndx > count) throw std::out_of_range("out of range");}
-    inline std::string get_data(node n) {return n ?  n->data : "nullptr";}     
+    inline std::string get_data(node n) {return n ?  n->data : "null";}     
     node    head;
     node    tail;
     size_t count;
@@ -60,8 +63,7 @@ List::~List()
 
 void List::push_back(const std::string & data)
 {
-    std::cout << "push: " << data << " count: " << count << std::endl;
-    if (count == 0)
+    if (!head)
     {    
         head = new ListNode(nullptr,nullptr,nullptr,data);
         tail = head;
@@ -69,23 +71,25 @@ void List::push_back(const std::string & data)
     else
     {
         tail->next = new ListNode(tail, nullptr, nullptr, data);
+        tail->next->rand = head;
         tail = tail->next;
     }    
-    ++count; 
+    count++;
+    std::cout << "push "<< data <<" count: " << count << std::endl; 
 }
+
 
 void List::clean()
 {
-    if(!tail) return;
-
+    if(!tail || !head) return;
     auto current = tail;
     while(current !=head && current->prev)
     {
         auto tmp = current;
         current = current->prev;
         delete tmp;
-        --count;
     }    
+    count = 0;
     delete head;
 }
 
@@ -103,29 +107,33 @@ void List::log()
 
 void List::for_each(const lambda &l)
 {
+    if(!head || !tail) return;
     size_t index = 0;
     auto current = head; 
-    while(current != tail && current->next)
+    do
     {
         l(current, index++);
         current = current->next;
-    }       
+    }
+    while(current !=tail);       
+    l(tail, index++);
 } 
     
 void List::Serialize(std::ostream & stream)   
 {
-    std::vector<node>     links;
-    std::vector<int32_t> indicies;
+    std::cout << "deserealize ... count: " << count << std::endl;
+   
+    std::vector<node>    links;
+    std::vector<int32_t> indicies(count, -1);
 
-    for_each([&](node n, int){links.push_back(n->rand);}); // 1st pass, collect random links
-    for_each([&](node n, int)                              // 2nd pass, collect random indicies
-    {
-        auto it = std::find(links.begin(), links.end(), n);
-        if (it != links.end() and *it) 
-            indicies.push_back(it-links.begin());
-        else 
-            indicies.push_back(-1); // in case random link is nullptr      
-    });
+    for_each([&](node n, int)  {links.push_back(n->rand);}); // 1st pass, collect random links
+    for(size_t i = 0; i < links.size(); i++)                 // 2nd pass, collect random indicies{
+    {    
+        for_each([&](node n, int ndx)  
+        {
+            if(n->rand == links[i]) indicies[ndx] = i;
+        }); 
+    }
     file_header hdr;
     hdr.count = count;
     stream.write(reinterpret_cast<const char *>(&hdr),sizeof(hdr));
@@ -141,7 +149,7 @@ void List::Serialize(std::ostream & stream)
 void List::Deserialize(std::istream & stream) 
 {
     clean(); // deserealize restore and does not append to current class!
-
+ 
     std::vector<int32_t> indicies;
     std::vector<node>     links;
    
@@ -149,10 +157,13 @@ void List::Deserialize(std::istream & stream)
     stream.read(reinterpret_cast<char *>(&hdr), sizeof(hdr));
     if(hdr.magic != 42)
         throw std::runtime_error("it's not own file ");
+    std::cout << "deserealize ... count: " << hdr.count << std::endl;
+   
     indicies.resize(hdr.count);
     links.resize(hdr.count);
     stream.read(reinterpret_cast<char *>(&indicies[0]),indicies.size() * sizeof(int32_t)); // read indicies
-    for(int i = 0; i < hdr.count; i++)                                                     // read data packet's
+   
+    for(int i = 0; i < hdr.count; i++)  // read data packet's
     {
         size_t       size;
         std::string  data;
@@ -161,13 +172,13 @@ void List::Deserialize(std::istream & stream)
         stream.read(reinterpret_cast<char *>(&data[0]),size);
         push_back(data);
     }  
-    
-    for_each([&](node n, int ndx) // 1st pass, restore random links
-    {
-        auto it = std::find(indicies.begin(), indicies.end(), ndx);
-        if (it != indicies.end() && *it !=-1)
-            links[it-indicies.begin()] = n; 
-    });                                                                         
+     for(size_t i = 0; i < indicies.size(); i++) // 1nd pass, collect random indocies
+    {    
+        for_each([&](node n, int ndx)  
+        {
+            if(ndx == indicies[i]) links[ndx] = n;
+        }); 
+    }
   
     for_each([&](node n, int ndx) // 2st pass, final
     {
@@ -178,18 +189,31 @@ void List::Deserialize(std::istream & stream)
 
 int main()
 {
-    List test;
+    List test1;
+    List test2;
+    
+    std::ifstream  ifile;
+    std::ofstream  ofile;
+    
     try
     {
-        test.push_back("node 1");
-        test.push_back("node 2");
-        test.push_back("node 3");
-        test.push_back("node 4");
-        test.push_back("node 5");
-        test.push_back("node 6");
-
-        test.log();
-
+       
+        test1.push_back("node 1");
+        test1.push_back("node 2");
+        test1.push_back("node 3");
+        test1.push_back("node 4");
+        test1.push_back("node 5");
+        test1.push_back("node 6");
+        
+        ofile.open("test.bin", std::ios::out | std::ios::binary);
+        test1.Serialize(ofile);
+        ofile.close();
+        ifile.open("test.bin");
+        test2.Deserialize(ifile);
+        std::cout << "\nin list : \n";
+        test1.log();
+        std::cout << "\nout list : \n";
+        test2.log();
 
     }
     catch(const std::exception &e)
