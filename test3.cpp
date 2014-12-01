@@ -118,7 +118,7 @@ void List::Deserialize(std::istream & stream)
     for_each([&](node n, int ndx) // 1st pass, restore random links
     {
         auto it = std::find(indicies.begin(), indicies.end(), ndx);
-        if (it != indicies.end())
+        if (it != indicies.end() && *it !=-1)
             links[it-indicies.begin()] = n; 
     });                                                                         
   
