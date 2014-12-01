@@ -25,6 +25,7 @@ public:
     
     void push_back(const std::string &);
     void for_each(const lambda &); 
+    void clean();
 
 private:    
 
@@ -50,16 +51,31 @@ List::~List()
 {}
 
 
-void   List::push_back(const std::string & data)
+void List::push_back(const std::string & data)
 {
     // ... do it for test
 
 }
 
+void List::clean()
+{
+    if(!tail) return;
+
+    auto current = tail;
+    while(current !=head && current->prev)
+    {
+        auto tmp = current;
+        current = current->prev;
+        delete tmp;
+        --count;
+    }    
+    delete head;
+}
+
 void List::for_each(const lambda &l)
 {
     size_t index = 0;
-    node current = head; 
+    auto current = head; 
     while(current != tail && current->next)
     {
         l(current, index++);
@@ -95,6 +111,8 @@ void List::Serialize(std::ostream & stream)
 
 void List::Deserialize(std::istream & stream) 
 {
+    clean(); // deserealize restore and does not append to current class!
+
     std::vector<uint32_t> indicies;
     std::vector<node>     links;
    
